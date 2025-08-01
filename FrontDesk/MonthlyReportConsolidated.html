@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <script>
@@ -41,19 +41,84 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.0/jquery-ui.css"
           crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
-<body>
-    <div class="container">
-     
+<body class="p-4">
+    <h2 class="mb-4">Monthly Patient Report</h2>
+
+    <!-- Date Range Filter -->
+    <div class="form-inline mb-4">
+        <label for="startDate" class="mr-2">Start Date:</label>
+        <input type="date" id="startDate" class="form-control mr-4">
+        <label for="endDate" class="mr-2">End Date:</label>
+        <input type="date" id="endDate" class="form-control mr-4">
+        <button onclick="generateReport()" class="btn btn-primary">Generate</button>
+    </div>
+
+    <!-- Summary Section -->
+    <div id="summary" class="mb-4">
+        <h5>Summary</h5>
+        <p>Total Patients: <span id="totalPatients">0</span></p>
+        <p>Total Amount: ₹<span id="totalAmount">0.00</span></p>
+        <p>Cash: ₹<span id="cashAmount">0.00</span> | Online: ₹<span id="onlineAmount">0.00</span></p>
+    </div>
+
+    <!-- Patient Table -->
+    <table class="table table-bordered">
+        <thead class="thead-light">
+            <tr>
+                <th>Sr. No.</th>
+                <th>First Name</th>
+                <th>Gender</th>
+                <th>Age</th>
+                <th>Amount</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody id="patientTableBody">
+            <!-- Populated by JS -->
+        </tbody>
+    </table>
+
     <script>
-        function onDomLoaded() {
-        
+        function generateReport() {
+            // Dummy data simulation
+            const data = [
+                { name: "Palkin", gender: "female", age: 20, amount: 50, date: "2025-07-24", mode: "cash" },
+                { name: "Arjun", gender: "male", age: 30, amount: 100, date: "2025-07-20", mode: "online" }
+            ];
+
+            const startDate = new Date(document.getElementById("startDate").value);
+            const endDate = new Date(document.getElementById("endDate").value);
+            const tbody = document.getElementById("patientTableBody");
+            tbody.innerHTML = "";
+
+            let total = 0, cash = 0, online = 0, count = 0;
+
+            data.forEach((item, index) => {
+                const itemDate = new Date(item.date);
+                if (itemDate >= startDate && itemDate <= endDate) {
+                    count++;
+                    total += item.amount;
+                    if (item.mode === "cash") cash += item.amount;
+                    else if (item.mode === "online") online += item.amount;
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${count}</td>
+                            <td>${item.name}</td>
+                            <td>${item.gender}</td>
+                            <td>${item.age}</td>
+                            <td>₹${item.amount.toFixed(2)}</td>
+                            <td>${item.date}</td>
+                        </tr>`;
+                }
+            });
+
+            document.getElementById("totalPatients").textContent = count;
+            document.getElementById("totalAmount").textContent = total.toFixed(2);
+            document.getElementById("cashAmount").textContent = cash.toFixed(2);
+            document.getElementById("onlineAmount").textContent = online.toFixed(2);
         }
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            onDomLoaded();
-        });
-
     </script>
-
 </body>
 </html>
+
