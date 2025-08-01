@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <script>
@@ -42,18 +43,186 @@
           crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
-    <div class="container">
-     
+    <div class="container mt-4">
+        <!-- Date Picker -->
+        <div class="form-group row">
+            <label for="reportDate" class="col-sm-1 col-form-label font-weight-bold">Date:</label>
+            <div class="col-sm-3">
+                <input type="date" id="reportDate" class="form-control" />
+            </div>
+        </div>
+
+        <!-- Search Old Records -->
+        <div class="mt-4 mb-2 font-weight-bold">Search Old Records:</div>
+        <div class="input-group mb-4">
+            <input type="text" class="form-control" id="searchInput" placeholder="Search by name..." />
+            <div class="input-group-append">
+                <button class="btn btn-primary" type="button" onclick="renderReport()">
+                    <i class="fas fa-search"></i>
+                </button>
+                <button class="btn btn-secondary" type="button" onclick="clearSearch()">
+                    <i class="fas fa-redo"></i>
+                </button>
+                <button class="btn btn-success" type="button" onclick="exportReport()">
+                    <i class="fas fa-file-export"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary Table -->
+        <div id="summaryTableDiv" class="mb-4"></div>
+
+        <!-- Patient Details Table -->
+        <div id="detailsTableDiv"></div>
+    </div>
+
     <script>
-        function onDomLoaded() {
-        
+        // Dummy data for demonstration
+        const patients = [
+            {
+                srNo: 29,
+                patientId: 46978,
+                department: "Karan Ji",
+                name: "Palkin Suneja",
+                gender: "female",
+                age: 20,
+                phone: "8307952213",
+                tests: 0,
+                amount: 50,
+                payment: "cash",
+                date: "2025-07-24"
+            }
+            // Add more records as needed
+        ];
+
+        function getSelectedDate() {
+            return document.getElementById("reportDate").value;
         }
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            onDomLoaded();
+        function renderReport() {
+            const date = getSelectedDate();
+            const search = document.getElementById("searchInput").value.trim().toLowerCase();
+
+            // Filter patients by date and search
+            const filtered = (patients || []).filter(p =>
+                (!date || p.date === date) &&
+                (!search || p.name.toLowerCase().includes(search))
+            );
+
+            // Department summary
+            const deptMap = {};
+            let totalCash = 0, totalOnline = 0, totalAmount = 0, totalPatients = 0;
+            filtered.forEach(p => {
+                const amt = Number(p.amount) || 0;
+                if (!deptMap[p.department]) deptMap[p.department] = { count: 0, amount: 0 };
+                deptMap[p.department].count += 1;
+                deptMap[p.department].amount += amt;
+                if (p.payment === "cash") totalCash += amt;
+                if (p.payment === "online") totalOnline += amt;
+                totalAmount += amt;
+                totalPatients += 1;
+            });
+
+            // Build summary table
+            let summaryHtml = `
+                <table class="table table-bordered mb-0">
+                    <thead>
+                        <tr>
+                            <th>Department Name</th>
+                            <th>Total Patient</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            const deptKeys = Object.keys(deptMap);
+            if (deptKeys.length === 0) {
+                summaryHtml += `<tr><td colspan="3" class="text-center">No records found.</td></tr>`;
+            } else {
+                for (const dept of deptKeys) {
+                    summaryHtml += `<tr>
+                        <td>${dept}</td>
+                        <td>${deptMap[dept].count}</td>
+                        <td>${deptMap[dept].amount.toFixed(2)}</td>
+                    </tr>`;
+                }
+                summaryHtml += `
+                    <tr>
+                        <td><b>Cash</b></td>
+                        <td></td>
+                        <td><b>${totalCash.toFixed(2)}</b></td>
+                    </tr>
+                    <tr>
+                        <td><b>Online</b></td>
+                        <td></td>
+                        <td><b>${totalOnline.toFixed(2)}</b></td>
+                    </tr>
+                    <tr>
+                        <td><b>Total</b></td>
+                        <td>${totalPatients}</td>
+                        <td><b>${totalAmount.toFixed(2)}</b></td>
+                    </tr>
+                `;
+            }
+            summaryHtml += "</tbody></table>";
+            document.getElementById("summaryTableDiv").innerHTML = summaryHtml;
+
+            // Build details table
+            let detailsHtml = `
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Sr.No.</th>
+                            <th>Patient Id</th>
+                            <th>Department Name</th>
+                            <th>Name</th>
+                            <th>Gender</th>
+                            <th>Age</th>
+                            <th>Mobile Number</th>
+                            <th>No. of Tests</th>
+                            <th>Amount</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            if (filtered.length === 0) {
+                detailsHtml += `<tr><td colspan="10" class="text-center">No records found.</td></tr>`;
+            } else {
+                filtered.forEach(p => {
+                    detailsHtml += `<tr>
+                        <td>${p.srNo}</td>
+                        <td>${p.patientId}</td>
+                        <td>${p.department}</td>
+                        <td>${p.name}</td>
+                        <td>${p.gender}</td>
+                        <td>${p.age}</td>
+                        <td>${p.phone}</td>
+                        <td>${p.tests}</td>
+                        <td>${Number(p.amount).toFixed(2)}</td>
+                        <td><i class="fas fa-print" style="cursor:pointer" title="Print"></i></td>
+                    </tr>`;
+                });
+            }
+            detailsHtml += "</tbody></table>";
+            document.getElementById("detailsTableDiv").innerHTML = detailsHtml;
+        }
+
+        function clearSearch() {
+            document.getElementById("searchInput").value = "";
+            renderReport();
+        }
+
+        function exportReport() {
+            alert("Export functionality not implemented in this demo.");
+        }
+
+        // Set default date to today and render initial report
+        document.addEventListener('DOMContentLoaded', function () {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById("reportDate").value = today;
+            renderReport();
         });
-
     </script>
-
 </body>
 </html>
