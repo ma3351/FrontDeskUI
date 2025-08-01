@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <script>
@@ -126,10 +126,17 @@
             <div class="col-md-6">
                 <div class="form-group">
                     <label for="payment">Select Payment Method:</label>
-                    <select id="payment" name="payment" class="form-control">
+                    <select id="payment" name="payment" class="form-control" onchange="toggleTransactionField()">
                         <option value="cash">Cash</option>
                         <option value="online">Online</option>
                     </select>
+                </div>
+            </div>
+            <!-- Transaction Number field (hidden by default) -->
+            <div class="col-md-6" id="transaction-number-group" style="display:none;">
+                <div class="form-group">
+                    <label for="transaction-number">Transaction Number:</label>
+                    <input type="text" class="form-control" id="transaction-number">
                 </div>
             </div>
             <div class="col-md-12">
@@ -140,8 +147,10 @@
                 </div>
             </div>
             <div class="col-md-12">
-                <button type="button" class="btn btn-primary" id="submit-button" onclick="submitButtonClicked()">Submit</button>
-                <!--<button type="button" class="btn btn-primary" id="print-button" onclick="printButtonClicked()">Print</button>-->
+                <div class="d-flex justify-content-center">
+                    <button type="button" class="btn btn-primary" id="submit-button" onclick="submitButtonClicked()">Submit</button>
+                    <!--<button type="button" class="btn btn-primary" id="print-button" onclick="printButtonClicked()">Print</button>-->
+                </div>
             </div>
 
             <div class="col-md-12 mt-3 text-center text-primary" id="message"></div>
@@ -149,21 +158,19 @@
                 <label for="search">Search Old Records:</label>
                 <div class="input-group">
                     <input type="text" class="form-control" id="search" placeholder="Enter patient name" onkeydown="handleSearchKeyPress(event)">
-                    <!-- Replace the "Search" button with an icon (Font Awesome 6 example) -->
                     <div class="input-group-append">
                         <button type="button" class="btn btn-primary" id="search-button" onclick="searchRecords()">
-                            <i class="fas fa-search"></i> <!-- Search icon -->
+                            <i class="fas fa-search"></i>
                         </button>
                     </div>
                     <div class="input-group-append">
                         <button type="button" class="btn btn-secondary" id="refresh-button" onclick="refreshSearch()">
-                            <i class="fas fa-redo"></i> <!-- Refresh icon -->
+                            <i class="fas fa-redo"></i>
                         </button>
                     </div>
-                    <!-- Export button -->
                     <div class="input-group-append">
                         <button type="button" class="btn btn-success" id="export-button" onclick="exportDataToExcel()">
-                            <i class="fas fa-file-export"></i> <!-- Export icon -->
+                            <i class="fas fa-file-export"></i>
                         </button>
                     </div>
                 </div>
@@ -252,11 +259,36 @@
             }
         }
 
+        // Show/hide transaction number field based on payment method
+        function toggleTransactionField() {
+            const payment = document.getElementById("payment").value;
+            const txnGroup = document.getElementById("transaction-number-group");
+            const txnInput = document.getElementById("transaction-number");
+            if (payment === "online") {
+                txnGroup.style.display = "";
+                txnInput.required = true;
+            } else {
+                txnGroup.style.display = "none";
+                txnInput.value = "";
+                txnInput.required = false;
+            }
+        }
+
         async function submitButtonClicked() {
             const patientNameInput = document.getElementById("patient-name");
 
             if (!validatePatientName(patientNameInput))
                 return;
+
+            // Check transaction number if payment is online
+            if (document.getElementById("payment").value === "online") {
+                const txnInput = document.getElementById("transaction-number");
+                if (!txnInput.value) {
+                    alert("Please enter transaction number for online payment.");
+                    txnInput.focus();
+                    return;
+                }
+            }
 
             showLoader(true);
 
@@ -301,6 +333,12 @@
             const selectedDoctorOption = document.getElementById("doctor-name").selectedOptions[0];
             const optionGroup = selectedDoctorOption.getAttribute("optionGroup");
 
+            // Add transactionNumber if payment is online
+            let transactionNumber = "";
+            if (document.getElementById("payment").value === "online") {
+                transactionNumber = document.getElementById("transaction-number").value;
+            }
+
             return {
                 patientId: document.getElementById("patient-id").value,
                 patientName: patientNameInput.value,
@@ -310,6 +348,7 @@
                 doctorName: document.getElementById("doctor-name").value,
                 amount: document.getElementById("amount").value,
                 paymentMethod: document.getElementById("payment").value,
+                transactionNumber: transactionNumber,
                 address: document.getElementById("address").value,
                 date: document.getElementById("date").value,
                 optionGroup
@@ -323,6 +362,8 @@
             ["patient-name", "age", "phone", "address"].forEach(id => document.getElementById(id).value = "");
             document.getElementById("payment").value = "cash";
             document.getElementById("gender").value = "Male";
+            document.getElementById("transaction-number").value = "";
+            toggleTransactionField();
         }
 
 
@@ -855,6 +896,9 @@
 
             getPatientIdOnLoad();
             socket = new WebSocket('ws://localhost:1234/'); // Replace with your server URL
+
+            // Initialize transaction field visibility
+            toggleTransactionField();
         }
 
         //onDomLoaded();
@@ -889,7 +933,7 @@
             display: none; /* Initially hidden */
         }
 
-        @@keyframes spin {
+        @keyframes spin {
             0% {
                 transform: rotate(0deg);
             }
@@ -925,5 +969,7 @@
     </style>
 
 
+</body>
+</html>
 </body>
 </html>
